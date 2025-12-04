@@ -34,7 +34,7 @@ jobs:
             -d "{\"content\":\"🆕 **New GitHub Update Posted!**\n\n**$TITLE**\n$LINK\"}" \
             $WEBHOOK
 
-            echo "$ID" > last_id.txt
+            OLD_ID=$(cat last_id.txt || echo 0)
 
             git config user.name github-actions
             git config user.email github-actions@github.com
