@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install tools
-        run: sudo apt-get install -y jq curl
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils jq curl
 
       - name: Fetch RSS and check new post
         env:
@@ -22,9 +22,10 @@ jobs:
           FEED_URL="https://github.blog/changelog/feed/"
           curl -s $FEED_URL > feed.xml
 
-          TITLE=$(xmllint --xpath "string(//item[1]/title)" feed.xml)
-          LINK=$(xmllint --xpath "string(//item[1]/link)" feed.xml)
-          ID=$(xmllint --xpath "string(//item[1]/guid)" feed.xml)
+          TITLE=$(grep -oPm1 "(?<=<title>)[^<]+" feed.xml | sed -n '2p')
+          LINK=$(grep -oPm1 "(?<=<link>)[^<]+" feed.xml | sed -n '2p')
+          ID=$(grep -oPm1 "(?<=<guid>)[^<]+" feed.xml | sed -n '1p')
+
 
           OLD_ID=$(cat last_id.txt)
 
