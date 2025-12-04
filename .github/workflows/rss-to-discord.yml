@@ -1,0 +1,43 @@
+name: GitHub Blog RSS to Discord
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours
+  workflow_dispatch:
+
+jobs:
+  rss:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get install -y jq curl
+
+      - name: Fetch RSS and check new post
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          FEED_URL="https://github.blog/changelog/feed/"
+          curl -s $FEED_URL > feed.xml
+
+          TITLE=$(xmllint --xpath "string(//item[1]/title)" feed.xml)
+          LINK=$(xmllint --xpath "string(//item[1]/link)" feed.xml)
+          ID=$(xmllint --xpath "string(//item[1]/guid)" feed.xml)
+
+          OLD_ID=$(cat last_id.txt)
+
+          if [ "$ID" != "$OLD_ID" ]; then
+            curl -H "Content-Type: application/json" \
+            -d "{\"content\":\"🆕 **New GitHub Update Posted!**\n\n**$TITLE**\n$LINK\"}" \
+            $WEBHOOK
+
+            echo "$ID" > last_id.txt
+
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            git add last_id.txt
+            git commit -m "Update last RSS ID"
+            git push
+          fi
